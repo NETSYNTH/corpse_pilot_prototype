@@ -5,29 +5,15 @@ import random
 import time
 import textwrap
 
-class Random_Generator():
 
-  def base_2(self, minimum, maximum):
-    return int(numpy.exp2(random.randint(minimum, maximum)))
+clear = lambda :os.system('clear||cls')
+base2 = lambda minimum, maximum: int(numpy.exp2(random.randint(minimum, maximum)))
+random_byte = lambda : random.randint(0, 255)
+hex_byte = lambda : f'{hex(random.randint(0, 255))[2:]}'.upper().zfill(2)
+hex_serial = lambda : ':'.join(hex_byte() for i in range(4))
+visual_binary = lambda byte: bin(byte)[2:].zfill(8).replace('0', ' ').replace('1', '|')
 
-  def byte(self):
-    return random.randint(64, 255)
 
-  def hex_byte(self):
-    byte = str.upper(hex(self.byte())[2:])
-    return ('0' * (2 - len(byte))) + byte
-
-  def hex_serial(self):
-    return '{}:{}:{}:{}'.format(*tuple(self.hex_byte() for byte in range(4)))
-  
-  def data(self, storage):
-    return random.randint(storage // 2, storage)
-
-  def sync(self):
-    return random.randint(32, 64)
-  
-
-gen = Random_Generator()
 field = []
 grave = []
 
@@ -42,13 +28,12 @@ vital_points = {
   'GV 15': 'Ya Men'
 }
 
-def vital_point_record(key, value):
-  return '[ {} | {} ]\n'.format(key, value + ' ' * (16 - len(value)))
+vital_point_record = lambda key, value: f'[ {key} | {value.ljust(16, " ")} ]'
   
 def vital_points_table():
-  table = ['[_][ :. vital_points :::::::. ]\n', '[ point | trad_mnemonic    ]\n']
+  table = ['[_][ :. vital_points :::::::. ]', '[ point | trad_mnemonic    ]']
   table.extend([vital_point_record(vital_point[0], vital_point[1]) for vital_point in vital_points.items()])
-  table = '   '.join(table)
+  table = '\n   '.join(table)
   return table
 
 def read_vital_points():
@@ -62,16 +47,16 @@ class Corpse:
   def __init__(self):
     self.active = False
     self.functional = True
-    self.id = gen.hex_serial()
+    self.id = hex_serial()
     self.link = None
-    self.integrity = gen.byte()
-    self.speed = gen.base_2(2, 4)
-    self.power = gen.base_2(2, 4)
+    self.integrity = random.randint(64, 255)
+    self.speed = base2(2, 4)
+    self.power = base2(2, 4)
     self.force = int(numpy.sqrt(self.speed) * self.power)
     grave.append(self)
 
   def __repr__(self):
-    return '{}:{}:{}:{}'.format(self.id, self.integrity, self.speed, self.power)
+    return f'{self.id}:{self.integrity}:{self.speed}:{self.power}'
   
   def reset(self):
     self.__init__()
@@ -108,16 +93,16 @@ class Pilot:
 
   def __init__(self):
     self.active = True
-    self.id = gen.hex_byte()
+    self.id = hex_byte()
     self.link = None
-    self.memory = gen.base_2(2, 4)
+    self.memory = base2(2, 4)
     self.storage = 16
-    self.data = gen.data(self.storage)
+    self.data = random.randint(self.storage // 2, self.storage)
     self.sync = 0
     self.intel = False
 
   def __repr__(self):
-    return'{}:{}:{}:{}'.format(self.id, self.memory, self.data, self.sync)
+    return f'{self.id}:{self.memory}:{self.data}:{self.sync}'
   
   def reset(self):
     self.__init__()
@@ -165,7 +150,7 @@ class Pilot:
   
   def upgrade(self, exp):
     self.storage = int(numpy.exp2(exp))
-    self.data = gen.data(self.storage)
+    self.data = random.randint(self.storage // 2, self.storage)
 
   def extract(self, pilot):
     data = int(numpy.sqrt(pilot.data))
@@ -222,11 +207,11 @@ class Pilot:
     corpse.active = True
     corpse.link = self
     self.link = corpse
-    self.sync = gen.sync()
+    self.sync = random.randint(32, 64)
   
   def transfer(self, corpse):
     if corpse is not self.link and corpse.functional:
-      if type(self.link) is Corpse:
+      if self.link:
         self.link.sever()
       self.attach(corpse)
       return True
@@ -275,13 +260,9 @@ class State:
     self.hostile = 16 // self.wave
 
 
-def visual_format(width, value, unit = False):
-  value = str(value) + ' {}'.format(unit) if unit else str(value)
-  return value + ' ' * (width - len(str(value)))
-
 def info(pilot):
   if type(pilot.link) is Corpse:
-    return command_display.format(pilot.id, pilot.link.id, visual_binary(pilot.link.integrity), pilot.memory, (16 - pilot.memory), ' ' if pilot.memory in range(7, 10) else '', visual_format(5, pilot.sync, '%'), visual_format(5, pilot.data, 'TB'), visual_format(6, stats[pilot.link.speed]), visual_format(6, stats[pilot.link.power]))
+    return command_display.format(pilot.id, pilot.link.id, visual_binary(pilot.link.integrity), pilot.memory, (16 - pilot.memory), ' ' if pilot.memory in range(7, 10) else '', f'{pilot.sync} %'.ljust(5, ' '), f'{pilot.data} TB'.ljust(5, ' '), f'{stats[pilot.link.speed]}'.ljust(6, ' '), f'{stats[pilot.link.power]}'.ljust(6, ' '))
   else:
     return command_display.format(pilot.id, '  :  :  :  ', visual_binary(0), pilot.memory, (16 - pilot.memory), ' ' if pilot.memory in range(7, 10) else '', pilot.sync, pilot.data, None, None)
 
@@ -299,16 +280,10 @@ scan_index = {0: 'a', 1: 's', 2: 'd', 3: 'f', 4: 'g'}
 
 scan_select = {'a': 0, 's': 1, 'd': 2, 'f': 3, 'g': 4}
 
-def scan_line(key, corpse):
-  return '[{}][ {} ][ {} ]\n   [ SPD: {} ] [ PWR: {} ]\n'.format(key, corpse.id, visual_binary(corpse.integrity), visual_format(4, stats[corpse.speed]), visual_format(4, stats[corpse.power]))
+scan_line = lambda key, corpse: f'[{key}][ {corpse.id} ][ {visual_binary(corpse.integrity)} ]\n   [ SPD: {stats[corpse.speed].ljust(4, " ")} ] [ PWR: {stats[corpse.power].ljust(4, " ")} ]\n'
 
 def scanner(active, scan):
-  scan_lines = [scan_line(('!' if corpse.active else ' ') if active else scan_index[scan.index(corpse)], corpse) for corpse in scan]
-  scan_lines = '\n'.join(scan_lines)
-  return scan_lines
-
-def clear():
-  os.system('clear||cls')
+  return '\n'.join([scan_line(('!' if corpse.active else ' ') if active else scan_index[scan.index(corpse)], corpse) for corpse in scan])
 
 tape = [
   'IN THE YEAR 199X', 
@@ -389,94 +364,88 @@ manual = {
 }
 
 def read(corpus, entry):
-  head = entry
   body = textwrap.wrap(corpus[entry], 30)
   exit = None
   while exit != ';':
-    exit = input('[_][ :. {} {}:. ]\n\n'.format(head, ':' * (18 - len(head))) + '\n'.join(body) + '\n' * (16 - len(body)) + '\n\n[;][ EXIT ][ :::::::::::::::: ]\n')
+    exit = input('[_][ :. {}:. ]\n\n'.format(f'{entry} '.ljust(19, ':')) + '\n'.join(body) + '\n' * (16 - len(body)) + '\n\n[;][ EXIT ][ :::::::::::::::: ]\n')
     clear()
 
-def visual_binary(byte):
-  return (' ' * (8 - len(bin(byte)[2:]))) + bin(byte)[2:].replace('0', ' ').replace('1', '|')
+alert = lambda signal, message: '[{}][ :. {}:. ]\n'.format({True: '!', False: '_'}[signal], f'{message} '.ljust(19, ':'))
 
-def alert(icon, message):
-  return '[{}][ :. {} {}:. ]\n'.format(icon, message, ':' * (18 - len(message)))
-
-def report(pilot, corpse):
-  return '[{}][ {} ][ {} ]\n'.format(pilot.id, corpse.id, visual_binary(corpse.integrity))
+report = lambda pilot, corpse: f'[{pilot.id}][ {corpse.id} ][ {visual_binary(corpse.integrity)} ]\n'
 
 def scanner_alert():
-  print(alert('_', 'NETWORK SCAN') + '   [ NODE SERIAL ][  SIGNAL  ]\n')
+  print(alert(False, 'NETWORK SCAN') + '   [ NODE SERIAL ][  SIGNAL  ]\n')
   time.sleep(0.4)
 
 def success_alert(hostile, operation, pilot):
-  return alert('!' if hostile else '_', 'HOSTILE ' + operation if hostile else operation + ' SUCCESS') + report(pilot, pilot.link)
+  return alert(hostile, 'HOSTILE ' + operation if hostile else operation + ' SUCCESS') + report(pilot, pilot.link)
 
 def failure_alert(hostile, operation, pilot):
-  return alert('_' if hostile else '!', 'HOSTILE ERROR' if hostile else operation + ' FAILURE') + report(pilot, pilot.link)
+  return alert(hostile, 'HOSTILE ERROR' if hostile else operation + ' FAILURE') + report(pilot, pilot.link)
 
 def transfer_alert(hostile, corpse, pilot):
-  input(alert('!' if hostile else '_', 'HOSTILE TRANSFER' if hostile else 'NEURAL TRANSFER') + '[ {} >>> {} ]\n'.format(corpse.id if type(corpse) is Corpse else '  :  :  :  ', pilot.link.id))
+  input(alert(hostile, 'HOSTILE TRANSFER' if hostile else 'NEURAL TRANSFER') + '[ {} >>> {} ]\n'.format(corpse.id if type(corpse) is Corpse else '  :  :  :  ', pilot.link.id))
 
 def sequence_alert(hostile, corpse):
-  input(alert('!' if hostile else '_', 'HOSTILE SEQUENCE' if hostile else 'STRIKE SEQUENCE') + '   [ LOCK |  > {} <  ]\n'.format(corpse.id))
+  input(alert(hostile, 'HOSTILE SEQUENCE' if hostile else 'STRIKE SEQUENCE') + f'   [ LOCK |  > {corpse.id} <  ]\n')
 
 def strike_alert(hostile, condition, pilot):
   print(success_alert(hostile, 'STRIKE', pilot) if condition else failure_alert(hostile, 'STRIKE', pilot))
   time.sleep(0.4)
 
 def deception_alert(hostile, pilot, corpse):
-  print(alert('_', 'HOSTILE ERROR' if hostile else 'STRIKE SUCCESS') + report(pilot, corpse))
+  print(alert(False, 'HOSTILE ERROR' if hostile else 'STRIKE SUCCESS') + report(pilot, corpse))
   time.sleep(0.4)
 
 def ambush_alert(hostile, pilot):
-  input(alert('!' if hostile else '_', 'HOSTILE AMBUSH' if hostile else 'AMBUSH PROTOCOL') + '   [ TARGET MARKED |  > {} <  ]\n'.format(pilot.id))
+  input(alert(hostile, 'HOSTILE AMBUSH' if hostile else 'AMBUSH PROTOCOL') + f'   [ TARGET MARKED |  > {pilot.id} <  ]\n')
 
 def parry_alert(hostile, condition, pilot):
   print(success_alert(hostile, 'PARRY', pilot) if condition else failure_alert(hostile, 'PARRY', pilot))
   time.sleep(0.4)
 
 def counter_alert(hostile, pilot):
-  input(alert('!' if hostile else '_', 'HOSTILE COUNTER' if hostile else 'COUNTERMEASURES') + '   [ ATTEMPT TRACE |  < {} >  ]\n'.format(pilot.id))
+  input(alert(hostile, 'HOSTILE COUNTER' if hostile else 'COUNTERMEASURES') + f'   [ ATTEMPT TRACE |  < {pilot.id} >  ]\n')
 
 def evade_alert(hostile, condition, pilot):
   print(success_alert(hostile, 'EVADE', pilot) if condition else failure_alert(hostile, 'EVADE', pilot))
   time.sleep(0.4)
 
 def database_alert(hostile, data):
-  input(alert('!' if hostile else '_', 'HOSTILE ENTRY' if hostile else 'DATABASE ENTRY') + '[ VIRTUAL DISK DRIVE: + {} TB {}]\n'.format(data, ' ' if data < 10 else ''))
+  input(alert(hostile, 'HOSTILE ENTRY' if hostile else 'DATABASE ENTRY') + '[ VIRTUAL DISK DRIVE: + {} TB {}]\n'.format(data, ' ' if data < 10 else ''))
 
 def memory_alert(hostile):
-  input(alert('!' if hostile else '_', 'HOSTILE MEMORY' if hostile else 'MEMORY MANAGER') + '[ RAM: 16 TB FREE : 0 TB USED ]\n')
+  input(alert(hostile, 'HOSTILE MEMORY' if hostile else 'MEMORY MANAGER') + '[ RAM: 16 TB FREE : 0 TB USED ]\n')
 
 def storage_alert(old, new):
-  input(alert('_', 'VIRTUAL DISK DRIVE') + '   [ STORAGE ][ {} TB > {} TB ]\n'.format(old, new))
+  input(alert(False, 'VIRTUAL DISK DRIVE') + f'   [ STORAGE ][ {old} TB > {new} TB ]\n')
 
 def stealth_alert():
-  print(alert('_', 'STEALTH ACTIVE') + '   [ HOST ][ > SELECT TARGET  ]\n')
+  print(alert(False, 'STEALTH ACTIVE') + '   [ HOST ][ > SELECT TARGET  ]\n')
   time.sleep(0.4)
 
 def injection_alert(payload):
-  print(alert('_', 'MALWARE INJECTION') + '   [ FILE ][ hate_machine.bin ]\n   [ {} ] >> [ {} ]\n'.format(visual_binary(255 - payload), visual_binary(payload)))
+  print(alert(False, 'MALWARE INJECTION') + f'   [ FILE ][ hate_machine.bin ]\n   [ {visual_binary(255 - payload)} ] >> [ {visual_binary(payload)} ]\n')
   time.sleep(0.2)
 
 def tracker_alert(corpse, distance):
-  print(alert('!', 'MOTION TRACKER') + '   [ {} ][ DIST: {} M ]\n'.format(corpse.id, distance))
+  print(alert(True, 'MOTION TRACKER') + f'   [ {corpse.id} ][ DIST: {distance} M ]\n')
   time.sleep(0.4)
 
 def network_alert(pilot):
-  input(alert('!', 'NETWORK ACTIVITY') + '   [ LINK ][ {} > {} ]\n'.format(pilot.id, pilot.link.id))
+  input(alert(True, 'NETWORK ACTIVITY') + f'   [ LINK ][ {pilot.id} > {pilot.link.id} ]\n')
 
 def hazard_alert(pilot):
-  input(alert('!', 'INFORMATION HAZARD') + '   [ HOST ][ {} ][ VDD: {} TB {}]\n'.format(pilot.id, pilot.data, ' ' if pilot.data < 10 else ''))
+  input(alert(True, 'INFORMATION HAZARD') + '   [ HOST ][ {} ][ VDD: {} TB {}]\n'.format(pilot.id, pilot.data, ' ' if pilot.data < 10 else ''))
 
 def critical_error():
   error = random.choice(tuple(critical_errors.items()))
-  print(alert('!', 'CRITICAL ERROR') + '[ {} ][ {}{} ]\n'.format(error[0], error[1], ' ' * (20 - len(error[1]))))
+  print(alert(True, 'CRITICAL ERROR') + '[ {} ][ {}{} ]\n'.format(error[0], error[1], ' ' * (20 - len(error[1]))))
   time.sleep(0.4)
 
 def system_reboot():
-  print(alert('_', 'SYSTEM REBOOT') + '[ RESTORING BACKUP DISK IMAGE ]\n')
+  print(alert(False, 'SYSTEM REBOOT') + '[ RESTORING BACKUP DISK IMAGE ]\n')
   time.sleep(8)
 
 def cpu_command_select():
@@ -804,7 +773,7 @@ def live_scan():
     corpse.reanimate()
 
 def kill_counter():
-  return alert('_', 'KILL COUNT: {}'.format(state.kill_count))
+  return alert(False, 'KILL COUNT: {}'.format(state.kill_count))
 
 def storage_upgrade():
   storage = user.storage
@@ -822,7 +791,7 @@ def cpu_reset():
 def kill():
   hazard = state.hazard
   state.kill()
-  input(kill_counter() + '   [ {} ]\n'.format(visual_format(24, one_liner())))
+  input(kill_counter() + f'   [ {one_liner().ljust(24, " ")} ]\n')
   if hazard:
     storage_upgrade()
   cpu_reset()
@@ -952,6 +921,7 @@ def hostile_insertion():
     motion_tracker()
   if state.hazard:
     hazard_alert(cpu)
+  clear()
 
 def quit_confirm():
   confirm = input(exfiltrate)
@@ -992,6 +962,7 @@ state = State()
 corpse_0.reanimate()
 user.transfer(corpse_0)
 user.link.integrity = 255
+
 
 def main():
   while True:
