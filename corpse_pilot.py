@@ -1,5 +1,6 @@
-#[  C O R P S E    P I L O T  ]
+#[  C O R P S E  |  P I L O T  ]
 import os
+import secrets
 import numpy
 import random
 import time
@@ -9,7 +10,7 @@ import textwrap
 clear = lambda :os.system('clear||cls')
 base2 = lambda minimum, maximum: int(numpy.exp2(random.randint(minimum, maximum)))
 random_byte = lambda : random.randint(0, 255)
-hex_byte = lambda : f'{hex(random.randint(0, 255))[2:]}'.upper().zfill(2)
+hex_byte = lambda : secrets.token_hex(1).upper()
 hex_serial = lambda : ':'.join(hex_byte() for i in range(4))
 visual_binary = lambda byte: bin(byte)[2:].zfill(8).replace('0', ' ').replace('1', '|')
 
@@ -19,6 +20,7 @@ grave = []
 
 injection = 'SELECT * FROM vital_points'
 vital_points = {
+  'point': 'trad_mnemonic', 
   'EX C1': 'Huatuojiaji', 
   'EX C2': 'Huatuojiaji', 
   'UB 10': 'Tian Zhu', 
@@ -28,15 +30,11 @@ vital_points = {
   'GV 15': 'Ya Men'
 }
 
-vital_point_record = lambda key, value: f'[ {key} | {value.ljust(16, " ")} ]'
-  
-def vital_points_table():
-  table = ['[_][ :. vital_points :::::::. ]', '[ point | trad_mnemonic    ]']
-  table.extend([vital_point_record(vital_point[0], vital_point[1]) for vital_point in vital_points.items()])
-  table = '\n   '.join(table)
-  return table
+vital_points_record = lambda key: f'[ {key} | {vital_points[key]:<16} ]'
 
-def read_vital_points():
+vital_points_table = lambda : '\n   '.join(['[_][ :. vital_points :::::::. ]', * [vital_points_record(key) for key in vital_points]])
+
+def view_vital_points():
   user.update(state.capacity)
   user.data = user.storage
   input(vital_points_table())
@@ -234,6 +232,7 @@ class State:
   
   def cloak(self):
     self.stealth = True
+    self.alerted = 0
   
   def alert(self):
     self.stealth = False
@@ -358,7 +357,7 @@ manual = {
   'NETWORK SCANNER': 'NETWORK SCAN provides a view of your immediate environment. Functional hosts in the vicinity are displayed as their unique ID, represented as a hexadecimal serial number, their INTEGRITY, represented in visual binary, followed by their SPEED and POWER. When performed in preparation of another strategy, a host is selected with the [a][s][d][f][g] keys, though an isolated SCAN can be performed with the [;] key. ',
   'NEURAL TRANSFER': 'NEURAL TRANSFER is used to move to a new CORPSE and AMBUSH your opponent, using the abandoned CORPSE as a decoy. AMBUSH damage relies on DATA and is assisted by FORCE. While your universal interface renders you compatible with any host, moving to a new one will reset your SYNC. However, succeeding in an AMBUSH restores SYNC. Integrating the NETWORK SCANNER for new host selection, TRANSFER is initiated with the [h] key.',
   'STRIKE SEQUENCE': 'STRIKE SEQUENCE is used to overwhelm an opponent with a high volume barrage, though it requires heavy committment, which can leave you vulnerable. Uninhibited by pain, the strain imposed degrades the INTEGRITY of your CORPSE. STRIKE success relies on SPEED to close the distance and can interrupt hostile technique execution. STRIKE damage relies on FORCE and is assisted by DATA. SEQUENCE is initiated with the [j] key.',
-  'COUNTERMEASURES': 'COUNTERMEASURES are used to wait for an opportunity to strike reactively while wear your opponent down through sustained defense. PARRY success relies on SYNC for coordination and degrades enemy SYNC, though taking damage will degrade your SYNC. COUNTER success relies on preventing all incoming damage. COUNTER damage relies on DATA and is assisted by FORCE. COUNTERMEASURES are initiated with the [k] key.',
+  'COUNTERMEASURES': 'COUNTERMEASURES are used to wait for an opportunity to strike reactively as you wear your opponent down through sustained defense. PARRY success relies on SYNC for coordination and degrades enemy SYNC, though taking damage will degrade your SYNC. COUNTER success relies on preventing all incoming damage. COUNTER damage relies on DATA and is assisted by FORCE. COUNTERMEASURES are initiated with the [k] key.',
   'THREAT ANALYSIS': 'THREAT ANALYSIS is an indirect method that allows you to perform evasive maneuvers while observing an enemy. EVADE success relies on MEMORY and uses MEMORY, making it best used in limited bursts. ANALYSIS success relies on avoiding all incoming damage, extracts DATA until you run out of STORAGE, restores MEMORY after, and always generates predictive INTEL on the enemy. THREAT ANALYSIS is initiated with the [l] key.',
   'MALWARE INJECTION': 'MALWARE INJECTION is used to simultaneously execute another PILOT directly and steal the CORPSE that hosts them intact. While a powerful method for recovering hosts, it can only be used from STEALTH. The brute force script used is MEMORY intensive, and can be interrupted if detected by hostile ICE, which will also alert other hostiles to your presence. STEALTH is activated automatically only after you KILL ALL HOSTILES.'
 }
@@ -367,10 +366,11 @@ def read(corpus, entry):
   body = textwrap.wrap(corpus[entry], 30)
   exit = None
   while exit != ';':
-    exit = input('[_][ :. {}:. ]\n\n'.format(f'{entry} '.ljust(19, ':')) + '\n'.join(body) + '\n' * (16 - len(body)) + '\n\n[;][ EXIT ][ :::::::::::::::: ]\n')
     clear()
+    exit = input(f'[_][ :. {entry + " "::<19}:. ]\n\n' + '\n'.join(body) + '\n' * (16 - len(body)) + '\n\n[;][ EXIT ][ :::::::::::::::: ]\n')
+  clear()
 
-alert = lambda signal, message: '[{}][ :. {}:. ]\n'.format({True: '!', False: '_'}[signal], f'{message} '.ljust(19, ':'))
+alert = lambda signal, message: f'[{"!" if signal else "_"}][ :. {message + " "::<19}:. ]\n'
 
 report = lambda pilot, corpse: f'[{pilot.id}][ {corpse.id} ][ {visual_binary(corpse.integrity)} ]\n'
 
@@ -379,10 +379,10 @@ def scanner_alert():
   time.sleep(0.4)
 
 def success_alert(hostile, operation, pilot):
-  return alert(hostile, 'HOSTILE ' + operation if hostile else operation + ' SUCCESS') + report(pilot, pilot.link)
+  return alert(hostile, f'HOSTILE {operation}' if hostile else f'{operation} SUCCESS') + report(pilot, pilot.link)
 
 def failure_alert(hostile, operation, pilot):
-  return alert(hostile, 'HOSTILE ERROR' if hostile else operation + ' FAILURE') + report(pilot, pilot.link)
+  return alert(not hostile, 'HOSTILE ERROR' if hostile else f'{operation} FAILURE') + report(pilot, pilot.link)
 
 def transfer_alert(hostile, corpse, pilot):
   input(alert(hostile, 'HOSTILE TRANSFER' if hostile else 'NEURAL TRANSFER') + '[ {} >>> {} ]\n'.format(corpse.id if type(corpse) is Corpse else '  :  :  :  ', pilot.link.id))
@@ -441,7 +441,7 @@ def hazard_alert(pilot):
 
 def critical_error():
   error = random.choice(tuple(critical_errors.items()))
-  print(alert(True, 'CRITICAL ERROR') + '[ {} ][ {}{} ]\n'.format(error[0], error[1], ' ' * (20 - len(error[1]))))
+  print(alert(True, 'CRITICAL ERROR') + f'[ {error[0]} ][ {error[1]:<20} ]\n')
   time.sleep(0.4)
 
 def system_reboot():
@@ -814,6 +814,9 @@ def death():
     transfer_alert(False, None, user)
   else:
     state.cloak()
+    user.transfer(cpu.link)
+    transfer_alert(False, None, user)
+    kill()
     stealth_injection()
 
 def checkpoint():
@@ -837,7 +840,7 @@ def combat_hostile():
     if not cpu.link and (state.alert or user.scan()):
       hostile_insertion()
       cpu_command = cpu_command_select()
-    print('[ WAVE {} | HOST {} | ALERT {} ]'.format(state.wave, state.hostile, '!' if state.alerted else '_'))
+    print(f'[ WAVE {state.wave:<2} | HOST {state.hostile:<2} | ALERT {"!" if state.alerted else "_"} ]')
     user_command = combat_display(cpu_command)
     clear()
     if (user_command == 'h' and user.scan()) or user_command in ['j', 'k', 'l']:
@@ -853,7 +856,7 @@ def combat_hostile():
     elif user_command == 'q':
       quit_confirm()
     elif user_command == injection:
-      read_vital_points()
+      view_vital_points()
       clear()
     else:
       continue
