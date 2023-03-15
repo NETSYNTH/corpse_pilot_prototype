@@ -14,13 +14,13 @@ Otherwise, it can be installed via:
 
 * Package manager on Linux
 
-    apt install python3
+        apt install python3
 
 * Microsoft Store on Windows
 
 * Official distribution
 
-    python.org
+        python.org
 
 
 Do the same with Pip, a package manager for Python modules.
