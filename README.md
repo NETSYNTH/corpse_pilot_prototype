@@ -1,4 +1,4 @@
-# corpse_pilot_prototype
+# [  C O R P S E  |  P I L O T  ]
 
 A text based terminal game.
 
