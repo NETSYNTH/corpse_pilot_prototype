@@ -219,6 +219,7 @@ class Pilot:
 class State:
 
   def __init__(self):
+    self.backup = 1
     self.kill_count = 0
     self.stealth = True
     self.capacity = 4
@@ -226,6 +227,9 @@ class State:
     self.hostile = 16
     self.alerted = 0
     self.hazard = False
+  
+  def restore(self):
+    self.backup = 0
   
   def reset(self):
     self.__init__()
@@ -299,12 +303,16 @@ def play_tape():
     clear()
     print('\n\n\n\n\n\n\n' + frame)
     time.sleep(4)
-  input('   [enter][RUN]\n')
+  input('[enter]\n')
   clear()
 
-infiltrate = '\n\n\n\n\n\n\n[!][ INFILTRATE DEAD ZONE ? ]\n   [enter][ START ]\n'
+infiltrate = '\n\n\n\n\n\n\n[!][ INFILTRATE DEAD ZONE ? ]\n   [r][ RUN ]\n'
 
 exfiltrate = '\n\n\n\n\n\n\n[!][ EXFILTRATE DEAD ZONE ? ]\n   [q][ QUIT ]\n'
+
+restore_backup = '\n\n\n\n\n\n\n[!][ RESTORE PILOT BACKUP ? ]\n   [r][ REBOOT ]\n   [q][ QUIT ]'
+
+not_found = '\n\n\n\n\n\n\n[!][ PILOT BACKUP NOT FOUND ]\n   [q][ QUIT ]\n'
 
 def one_liner(): return random.choice(one_liners)
 
@@ -802,13 +810,6 @@ def reboot():
   user.upgrade(state.capacity)
   system_reboot()
   clear()
-
-def death():
-  for i in range(8):
-    critical_error()
-  clear()
-  quit_confirm()
-  reboot()
   if user.scan():
     user.transfer(user_scan_select())
     transfer_alert(False, None, user)
@@ -818,6 +819,33 @@ def death():
     transfer_alert(False, None, user)
     kill()
     stealth_injection()
+
+def restore():
+  state.restore()
+  while True:
+    revenge = input(restore_backup)
+    clear()
+    if revenge == 'r':
+      reboot()
+    elif revenge == 'q':
+      quit_confirm()
+    else:
+      continue
+
+def death():
+  for i in range(8):
+    critical_error()
+  clear()
+  if state.backup:
+    restore()
+  else:
+    while True:
+      failure = input(not_found)
+      clear()
+      if failure == 'q':
+        quit()
+      else:
+        continue
 
 def checkpoint():
   if not user.active:
@@ -926,6 +954,15 @@ def hostile_insertion():
     hazard_alert(cpu)
   clear()
 
+def run_confirm():
+  while True:
+    confirm = input(infiltrate)
+    clear()
+    if confirm == 'r':
+      return
+    else:
+      continue
+
 def quit_confirm():
   confirm = input(exfiltrate)
   clear()
@@ -943,12 +980,16 @@ def read_manual():
 
 def run():
   play_tape()
-  rtfm = input('\n\n\n\n\n\n\n[!][ :. READ THE FN MANUAL ? ]\n   [;][ READ ]\n')
-  clear()
-  if rtfm == ';':
-    read_manual()
-  input(infiltrate)
-  clear()
+  while True:
+    rtfm = input('\n\n\n\n\n\n\n[!][ :. READ THE FN MANUAL ? ]\n   [;][ READ ]\n   [r][ NAH ]\n')
+    clear()
+    if rtfm == ';':
+      read_manual()
+    elif rtfm == 'r':
+      run_confirm()
+      break
+    else:
+      continue
 
 cpu = Pilot()
 user = Pilot()
