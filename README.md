@@ -9,7 +9,12 @@ To check whether Python 3 is installed on your device, run:
     python3 --version
 
 if a version is returned, then it is installed.
-Otherwise, use your OS package manager to install it.
+
+Otherwise, use your OS package manager to install it
+
+Example:
+
+    apt install python3
 
 Do the same with Pip, a package manager for Python modules.
 
