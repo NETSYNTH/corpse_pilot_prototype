@@ -10,25 +10,31 @@ To check whether Python 3 is installed on your device, run:
 
 if a version is returned, then it is installed.
 
-Otherwise, use your OS package manager to install it
+Otherwise, it can be installed via:
 
-Example:
+* Package manager on Linux
 
     apt install python3
 
+* Microsoft Store on Windows
+
+* Official distribution
+
+    python.org
+
+
 Do the same with Pip, a package manager for Python modules.
+Your installation of Python may already include Pip.
 
     pip --version
 
-Once both are installed, navigate to the root directory:
-
-    ~/corpse_pilot_prototype/
-
-then run:
+Once both are installed, navigate to the root directory, then run:
 
     pip install -r requirements.txt
 
-From root directory, you can run:
+This will install dependencies.
+
+To play, from root directory, execute:
 
     python3 corpse_pilot_prototype.py
 
