@@ -21,6 +21,7 @@ Otherwise, it can be installed via:
 [python.org](https://python.org)
 
 Do the same with Pip, a package manager for Python modules.
+
 Your installation of Python may already include Pip.
 
     pip --version
