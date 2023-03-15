@@ -310,7 +310,7 @@ infiltrate = '\n\n\n\n\n\n\n[!][ INFILTRATE DEAD ZONE ? ]\n   [r][ RUN ]\n'
 
 exfiltrate = '\n\n\n\n\n\n\n[!][ EXFILTRATE DEAD ZONE ? ]\n   [q][ QUIT ]\n'
 
-restore_backup = '\n\n\n\n\n\n\n[!][ RESTORE PILOT BACKUP ? ]\n   [r][ REBOOT ]\n   [q][ QUIT ]'
+restore_backup = '\n\n\n\n\n\n\n[!][ RESTORE PILOT BACKUP ? ]\n   [r][ REBOOT ]\n   [q][ QUIT ]\n'
 
 not_found = '\n\n\n\n\n\n\n[!][ PILOT BACKUP NOT FOUND ]\n   [q][ QUIT ]\n'
 
@@ -806,6 +806,7 @@ def kill():
   clear()
 
 def reboot():
+  state.restore()
   user.reboot()
   user.upgrade(state.capacity)
   system_reboot()
@@ -821,12 +822,12 @@ def reboot():
     stealth_injection()
 
 def restore():
-  state.restore()
   while True:
     revenge = input(restore_backup)
     clear()
     if revenge == 'r':
       reboot()
+      break
     elif revenge == 'q':
       quit_confirm()
     else:
@@ -985,6 +986,7 @@ def run():
     clear()
     if rtfm == ';':
       read_manual()
+      break
     elif rtfm == 'r':
       run_confirm()
       break
